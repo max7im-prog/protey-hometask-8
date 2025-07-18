@@ -1,19 +1,31 @@
 #!/bin/bash
 
-heavyProcessPID=$(ps -ao pid --sort +%cpu | tail -n 1 | xargs)
-directory="/proc/$heavyProcessPID"
-
-if [ -d $directory ]; then
-    cmd=$(cat $directory/cmdline)
-    cwd=$(readlnk $directory/cwd)
-    stat=$(cat $directory/stat)
-    echo "Process PID: $heavyProcessPID"
-    echo "Process command: $cmd"
-    echo "Process working directory: $cwd"
-    echo "Process status: $stat"
-
-else
-    echo "process with PID of $heavyProcessPID has the highest cpu consumption, but it is already finished"
-fi
+while [ 1 ]
+do
+    foundDirectory=false
+    while [ $foundDirectory = false ]
+    do
+        heavyProcess=$(ps aux --sort +%cpu | tail -n 1 | tr -s " ")
+        pid=$(echo $heavyProcess | awk '{print $2}')
+        directory="/proc/$pid"
+        if [ -d "$directory" ]; then
+            stat=$(cat "$directory/status")
+            cmd=$(tr '\0' ' ' < "$directory/cmdline")
+            cwd=$(readlink "$directory/cwd")
+            exe=$(readlink "$directory/exe")
+            root=$(readlink "$directory/root")
+            clear
+            echo "Process PID: $pid"
+            echo "$stat" | grep --ignore-case name
+            echo "$stat" | grep --ignore-case state
+            echo "Process command: $cmd"
+            echo "Process executable: $exe"
+            echo "Process working directory: $cwd"
+            echo "Process root directory: $root"
+            foundDirectory=true
+        fi
+    done
+    sleep 5s
+done
 
 
